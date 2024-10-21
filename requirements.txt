@@ -1,0 +1,12 @@
+requests
+aiohttp
+scapy
+socket
+threading
+concurrent.futures
+numpy
+pandas
+loguru
+colorama
+gevent
+dnspython
