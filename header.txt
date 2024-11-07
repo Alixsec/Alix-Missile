@@ -1,0 +1,26 @@
+def load_headers(file_name="header.txt"):
+    headers = {}
+    try:
+        with open(file_name, 'r') as file:
+            for line in file:
+                if ": " in line:  # Ensuring proper formatting
+                    key, value = line.split(": ", 1)  # Split into key and value at the first colon
+                    headers[key.strip()] = value.strip()
+                else:
+                    console.print(f"[WARNING] Skipping malformed header line: {line}", style="bold yellow")
+    except FileNotFoundError:
+        console.print(f"[ERROR] {file_name} not found. Check if the file exists.", style="bold red")
+    except Exception as e:
+        console.print(f"[ERROR] Failed to load headers: {e}", style="bold red")
+    
+    return headers
+
+# Example of how to use the headers in your request
+headers = load_headers()
+
+# Generating the request dynamically
+request = f"{request_type} / HTTP/1.1\r\nHost: {target}\r\n"
+for header, value in headers.items():
+    request += f"{header}: {value}\r\n"
+request += f"X-Forwarded-For: {generate_fake_ip()}\r\n\r\n"
+
